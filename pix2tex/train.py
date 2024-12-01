@@ -1,4 +1,4 @@
-from pix2tex.dataset.dataset import Im2LatexDataset
+from pix2tex.dataset.dataset import Im2LatexDataset 
 import os
 import argparse
 import logging
@@ -35,15 +35,13 @@ def train(args):
         model.load_state_dict(torch.load(args.load_chkpt, map_location=device))
 
     def save_models(e, step=0):
-        torch.save(model.state_dict(), os.path.join(out_path, '%s_e%02d_step%02d.pth' % (args.name, e+1, step)))
+        with open(os.path.join(out_path, f'{args.name}_e{e+1}_step{step}.pkl'), 'wb') as f:
+            torch.save(model, f)
         yaml.dump(dict(args), open(os.path.join(out_path, 'config.yaml'), 'w+'))
 
     # Get optimizer
     opt = get_optimizer(args.optimizer)(model.parameters(), args.lr, betas=args.betas)
     
-    # Using ReduceLROnPlateau scheduler (no need for passing as argument)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='min', factor=0.1, patience=3, verbose=True)
-
     # Microbatch support
     microbatch = args.get('micro_batchsize', -1)
     if microbatch == -1:
@@ -69,7 +67,7 @@ def train(args):
 
                     # Log loss and learning rate to wandb
                     if args.wandb:
-                        wandb.log({'train/loss': total_loss, 'train/lr': scheduler._last_lr[0]})
+                        wandb.log({'train/loss': total_loss})
 
                 if (i + 1 + len(dataloader) * e) % args.sample_freq == 0:
                     bleu_score, edit_distance, token_accuracy = evaluate(model, valdataloader, args, num_batches=int(args.valbatches * e / args.epochs), name='val')
@@ -85,10 +83,6 @@ def train(args):
             # Log epoch number to wandb
             if args.wandb:
                 wandb.log({'train/epoch': e + 1})
-
-            # Step scheduler after each epoch based on validation loss
-            val_loss = evaluate(model, valdataloader, args, num_batches=int(args.valbatches * e / args.epochs), name='val', return_loss=True)
-            scheduler.step(val_loss)
 
     except KeyboardInterrupt:
         if e >= 2:
