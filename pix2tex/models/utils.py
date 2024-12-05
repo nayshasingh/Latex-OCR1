@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import hybrid
-from . import vit  # This might be renamed or replaced to import Swin Transformer
 from . import transformer
-from . import swin  # Assuming you have a swin.py for the Swin Transformer
+from . import swin  
 
 class Model(nn.Module):
     def __init__(self, encoder, decoder, args):
@@ -96,12 +95,10 @@ def get_model(args):
     """
     Initialize the model with specified encoder and decoder architectures.
     """
-    if args.encoder_structure.lower() == 'vit':
-        encoder = vit.get_encoder(args)  # Use ViT as the encoder
-    elif args.encoder_structure.lower() == 'hybrid':
+    if args.encoder_structure.lower() == 'hybrid':
         encoder = hybrid.get_encoder(args)
     elif args.encoder_structure.lower() == 'swin':
-        encoder = swin.get_encoder(args)  # New encoder structure for Swin Transformer
+        encoder = swin.get_encoder(args)  
     else:
         raise NotImplementedError(f'Encoder structure "{args.encoder_structure}" not supported.')
 
